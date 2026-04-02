@@ -1138,7 +1138,7 @@ impl BlockWriter {
 /// all the same type.  Thus, [`Writer1`] and [`Writer2`] exist for writing
 /// 1-column and 2-column layer files, respectively, with added type safety.
 struct Writer {
-    cache: fn() -> Arc<BufferCache>,
+    cache: fn() -> Option<Arc<BufferCache>>,
     writer: BlockWriter,
     bloom_filter: Option<TrackingBloomFilter>,
     cws: Vec<ColumnWriter>,
@@ -1164,7 +1164,7 @@ impl Writer {
 
     pub fn new(
         factories: &[&AnyFactories],
-        cache: fn() -> Arc<BufferCache>,
+        cache: fn() -> Option<Arc<BufferCache>>,
         storage_backend: &dyn StorageBackend,
         parameters: Parameters,
         n_columns: usize,
@@ -1193,7 +1193,10 @@ impl Writer {
         let worker = format!("w{}-", Runtime::worker_index());
         let writer = Self {
             cache,
-            writer: BlockWriter::new(cache(), storage_backend.create_with_prefix(&worker.into())?),
+            writer: BlockWriter::new(
+                cache().expect("Should have a buffer cache"),
+                storage_backend.create_with_prefix(&worker.into())?,
+            ),
             bloom_filter,
             cws,
             finished_columns,
@@ -1377,7 +1380,7 @@ where
     /// Creates a new writer with the given parameters.
     pub fn new(
         factories: &Factories<K0, A0>,
-        cache: fn() -> Arc<BufferCache>,
+        cache: fn() -> Option<Arc<BufferCache>>,
         storage_backend: &dyn StorageBackend,
         parameters: Parameters,
         estimated_keys: usize,
@@ -1552,7 +1555,7 @@ where
     pub fn new(
         factories0: &Factories<K0, A0>,
         factories1: &Factories<K1, A1>,
-        cache: fn() -> Arc<BufferCache>,
+        cache: fn() -> Option<Arc<BufferCache>>,
         storage_backend: &dyn StorageBackend,
         parameters: Parameters,
         estimated_keys: usize,
