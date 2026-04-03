@@ -43,6 +43,7 @@ pub struct Q9Output(
 );
 
 dbsp::never_none!(Q9Output);
+dbsp::never_batch_key_filter_key!(Q9Output);
 
 type Q9Stream = Stream<RootCircuit, OrdZSet<Q9Output>>;
 
